@@ -1,165 +1,39 @@
-# +═════════════════════════════════════════════════════════════════════════+
-# ║      ███▄ ▄███▓ ██ ▄█▀ █    ██  ██▓    ▄▄▄█████▓ ██▀███   ▄▄▄           ║
-# ║     ▓██▒▀█▀ ██▒ ██▄█▒  ██  ▓██▒▓██▒    ▓  ██▒ ▓▒▓██ ▒ ██▒▒████▄         ║
-# ║     ▓██    ▓██░▓███▄░ ▓██  ▒██░▒██░    ▒ ▓██░ ▒░▓██ ░▄█ ▒▒██  ▀█▄       ║
-# ║     ▒██    ▒██ ▓██ █▄ ▓▓█  ░██░▒██░    ░ ▓██▓ ░ ▒██▀▀█▄  ░██▄▄▄▄██      ║
-# ║     ▒██▒   ░██▒▒██▒ █▄▒▒█████▓ ░██████▒  ▒██▒ ░ ░██▓ ▒██▒ ▓█   ▓██▒     ║
-# ║     ░ ▒░   ░  ░▒ ▒▒ ▓▒░▒▓▒ ▒ ▒ ░ ▒░▓  ░  ▒ ░░   ░ ▒▓ ░▒▓░ ▒▒   ▓▒█░     ║
-# ║     ░  ░      ░░ ░▒ ▒░░░▒░ ░ ░ ░ ░ ▒  ░    ░      ░▒ ░ ▒░  ▒   ▒▒ ░     ║
-# ║     ░      ░   ░ ░░ ░  ░░░ ░ ░   ░ ░     ░        ░░   ░   ░   ▒        ║
-# ║            ░   ░  ░      ░         ░  ░            ░           ░  ░     ║
-# ║                                                                         ║
-# +═════════════════════════════════════════════════════════════════════════+
-# ║                               by MKultra69                              ║
-# +═════════════════════════════════════════════════════════════════════════+
-# +═════════════════════════════════════════════════════════════════════════+
-# ║                      https://github.com/MKultra6969                     ║
-# +═════════════════════════════════════════════════════════════════════════+
-# +═════════════════════════════════════════════════════════════════════════+
-# ║                                  mk69.su                                ║
-# +═════════════════════════════════════════════════════════════════════════+
-# +═════════════════════════════════════════════════════════════════════════+
-# ║                           VERSION 0.9.6 fixes                           ║
-# ║             В случае багов/недочётов создайте issue на github           ║
-# ║                                                                         ║
-# +═════════════════════════════════════════════════════════════════════════+
-
-
-import argparse
-import tempfile
-import sys
-import os
-import shutil
-import logging
-import random
-import time
-import json
-import socket
-import subprocess
-import platform
-import base64
-import requests
-import psutil
-import re   
+import argparse, tempfile, sys, os, shutil, logging, random, time, json, socket, subprocess, platform, base64, requests, psutil, re, urllib3, urllib.parse
 from datetime import datetime
 from http.client import BadStatusLine, RemoteDisconnected
-import urllib.parse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from types import SimpleNamespace
 from threading import Lock, Semaphore
-
-try:
-    from art import text2art
-except ImportError:
-    text2art = None
-
-import urllib3
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-try:
-    import aggregator
-    AGGREGATOR_AVAILABLE = True
-except ImportError:
-    AGGREGATOR_AVAILABLE = False
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn, TimeRemainingColumn
+from rich.prompt import Prompt, Confirm
+from rich.logging import RichHandler
+from rich import box
+from rich.text import Text
 
 # cfg
-CONFIG_FILE = "config.json"
-SOURCES_FILE = "sources.json"
-
-# Стандартные истончники проксей
-DEFAULT_SOURCES_DATA = {
-    "1": [
-        "https://sub.amiralter.com/config", "https://itsyebekhe.github.io/PSG/", "https://f0rc3run.github.io/F0rc3Run-panel/", 
-        "https://raw.githubusercontent.com/mermeroo/QX/main/Nodes", "https://raw.githubusercontent.com/Ashkan-m/v2ray/main/VIP.txt",
-        "https://raw.githubusercontent.com/nscl5/5/main/configs/all.txt", "https://raw.githubusercontent.com/mermeroo/Loon/main/all.nodes.txt",
-        "https://raw.githubusercontent.com/Kolandone/v2raycollector/main/ss.txt", "https://raw.githubusercontent.com/MhdiTaheri/V2rayCollector/main/sub/ss",
-        "https://raw.githubusercontent.com/Surfboardv2ray/TGParse/main/python/ss", "https://raw.githubusercontent.com/MhdiTaheri/V2rayCollector/main/sub/mix",
-        "https://raw.githubusercontent.com/T3stAcc/V2Ray/main/All_Configs_Sub.txt", "https://raw.githubusercontent.com/liketolivefree/kobabi/main/sub_all.txt",
-        "https://raw.githubusercontent.com/Kolandone/v2raycollector/main/vless.txt", "https://raw.githubusercontent.com/LalatinaHub/Mineral/master/result/nodes",
-        "https://raw.githubusercontent.com/misersun/config003/main/config_all.yaml", "https://raw.githubusercontent.com/penhandev/AutoAiVPN/main/allConfigs.txt",
-        "https://raw.githubusercontent.com/Kolandone/v2raycollector/main/config.txt", "https://raw.githubusercontent.com/MhdiTaheri/V2rayCollector/main/sub/vless",
-        "https://raw.githubusercontent.com/Surfboardv2ray/TGParse/main/configtg.txt", "https://raw.githubusercontent.com/Surfboardv2ray/TGParse/main/python/vless",
-        "https://raw.githubusercontent.com/lagzian/SS-Collector/main/SS/TrinityBase", "https://raw.githubusercontent.com/terik21/HiddifySubs-VlessKeys/main/6Satu",
-        "https://raw.githubusercontent.com/wiki/gfpcom/free-proxy-list/lists/ss.txt", "https://raw.githubusercontent.com/Danialsamadi/v2go/main/All_Configs_Sub.txt",
-        "https://raw.githubusercontent.com/sevcator/5ubscrpt10n/main/protocols/vl.txt", "https://raw.githubusercontent.com/aqayerez/MatnOfficial-VPN/main/MatnOfficial",
-        "https://raw.githubusercontent.com/wiki/gfpcom/free-proxy-list/lists/vless.txt", "https://raw.githubusercontent.com/youfoundamin/V2rayCollector/main/ss_iran.txt",
-        "https://raw.githubusercontent.com/Argh94/V2RayAutoConfig/main/configs/Vless.txt", "https://raw.githubusercontent.com/RaitonRed/ConfigsHub/main/All_Configs_Sub.txt",
-        "https://raw.githubusercontent.com/SoliSpirit/v2ray-configs/main/all_configs.txt", "https://raw.githubusercontent.com/skywrt/v2ray-configs/main/All_Configs_Sub.txt",
-        "https://raw.githubusercontent.com/SamanGho/v2ray_collector/main/v2tel_links2.txt", "https://raw.githubusercontent.com/SoliSpirit/v2ray-configs/main/Protocols/ss.txt",
-        "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/All_Configs_Sub.txt", "https://raw.githubusercontent.com/coldwater-10/V2rayCollector/main/vmess_iran.txt",
-        "https://raw.githubusercontent.com/youfoundamin/V2rayCollector/main/vless_iran.txt", "https://github.com/Epodonios/v2ray-configs/raw/main/Splitted-By-Protocol/vmess.txt",
-        "https://raw.githubusercontent.com/SoliSpirit/v2ray-configs/main/Protocols/vless.txt", "https://raw.githubusercontent.com/SoliSpirit/v2ray-configs/main/Protocols/vmess.txt",
-        "https://raw.githubusercontent.com/HosseinKoofi/GO_V2rayCollector/main/vless_iran.txt", "https://raw.githubusercontent.com/hamedcode/port-based-v2ray-configs/main/sub/ss.txt",
-        "https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/sub_merge.txt", "https://raw.githubusercontent.com/AvenCores/goida-vpn-configs/main/githubmirror/14.txt",
-        "https://raw.githubusercontent.com/10ium/ScrapeAndCategorize/main/output_configs/USA.txt", "https://raw.githubusercontent.com/Danialsamadi/v2go/main/Splitted-By-Protocol/vmess.txt",
-        "https://raw.githubusercontent.com/F0rc3Run/F0rc3Run/main/splitted-by-protocol/vless.txt", "https://raw.githubusercontent.com/RaitonRed/ConfigsHub/main/Splitted-By-Protocol/ss.txt",
-        "https://raw.githubusercontent.com/ebrasha/free-v2ray-public-list/main/vmess_configs.txt", "https://raw.githubusercontent.com/hamedcode/port-based-v2ray-configs/main/sub/vless.txt",
-        "https://raw.githubusercontent.com/hamedcode/port-based-v2ray-configs/main/sub/vmess.txt", "https://raw.githubusercontent.com/mshojaei77/v2rayAuto/main/telegram/popular_channels_1",
-        "https://raw.githubusercontent.com/10ium/ScrapeAndCategorize/main/output_configs/Vless.txt", "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Splitted-By-Protocol/ss.txt",
-        "https://raw.githubusercontent.com/kismetpro/NodeSuber/main/Splitted-By-Protocol/vless.txt", "https://raw.githubusercontent.com/nyeinkokoaung404/V2ray-Configs/main/All_Configs_Sub.txt",
-        "https://raw.githubusercontent.com/itsyebekhe/PSG/main/config.txt", "https://github.com/4n0nymou3/multi-proxy-config-fetcher/raw/main/configs/proxy_configs.txt",
-        "https://raw.githubusercontent.com/RaitonRed/ConfigsHub/main/Splitted-By-Protocol/vless.txt", "https://raw.githubusercontent.com/RaitonRed/ConfigsHub/main/Splitted-By-Protocol/vmess.txt",
-        "https://raw.githubusercontent.com/mahdibland/ShadowsocksAggregator/master/sub/sub_merge.txt", "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Splitted-By-Protocol/vless.txt",
-        "https://raw.githubusercontent.com/barry-far/V2ray-Config/main/Splitted-By-Protocol/vmess.txt", "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/Splitted-By-Protocol/vmess.txt",
-        "https://raw.githubusercontent.com/F0rc3Run/F0rc3Run/main/splitted-by-protocol/shadowsocks.txt", "https://raw.githubusercontent.com/10ium/ScrapeAndCategorize/main/output_configs/ShadowSocks.txt",
-        "https://raw.githubusercontent.com/MatinGhanbari/v2ray-configs/main/subscriptions/v2ray/all_sub.txt", "https://raw.githubusercontent.com/Firmfox/Proxify/main/v2ray_configs/seperated_by_protocol/shadowsocks.txt",
-        "https://raw.githubusercontent.com/ebrasha/free-v2ray-public-list/main/V2Ray-Config-By-EbraSha-All-Type.txt"
-    ],
-    "2": [
-        "https://raw.githubusercontent.com/NiREvil/vless/main/sub/SSTime", "https://raw.githubusercontent.com/nscl5/5/main/configs/vmess.txt",
-        "https://raw.githubusercontent.com/HakurouKen/free-node/main/public", "https://raw.githubusercontent.com/Mosifree/-FREE2CONFIG/main/Vless",
-        "https://raw.githubusercontent.com/awesome-vpn/awesome-vpn/master/ss", "https://raw.githubusercontent.com/mfuu/v2ray/master/merge/merge.txt",
-        "https://raw.githubusercontent.com/Mosifree/-FREE2CONFIG/main/Reality", "https://raw.githubusercontent.com/awesome-vpn/awesome-vpn/master/all",
-        "https://raw.githubusercontent.com/VpnNetwork01/vpn-net/main/README.md", "https://raw.githubusercontent.com/Kolandone/v2raycollector/main/ssr.txt",
-        "https://raw.githubusercontent.com/xiaoji235/airport-free/main/v2ray.txt", "https://raw.githubusercontent.com/penhandev/AutoAiVPN/main/AtuoAiVPN.txt",
-        "https://raw.githubusercontent.com/Kolandone/v2raycollector/main/vmess.txt", "https://raw.githubusercontent.com/Syavar/V2ray-Configs/main/OK_vk.com.txt",
-        "https://raw.githubusercontent.com/peasoft/NoMoreWalls/master/list_raw.txt", "https://raw.githubusercontent.com/ALIILAPRO/v2rayNG-Config/main/server.txt",
-        "https://raw.githubusercontent.com/Barabama/FreeNodes/main/nodes/ndnode.txt", "https://raw.githubusercontent.com/Barabama/FreeNodes/main/nodes/wenode.txt",
-        "https://raw.githubusercontent.com/MhdiTaheri/V2rayCollector/main/sub/vmess", "https://raw.githubusercontent.com/SonzaiEkkusu/V2RayDumper/main/config.txt",
-        "https://raw.githubusercontent.com/Surfboardv2ray/TGParse/main/python/vmess", "https://raw.githubusercontent.com/Surfboardv2ray/TGParse/main/tg-parser.py",
-        "https://raw.githubusercontent.com/iboxz/free-v2ray-collector/main/main/mix", "https://raw.githubusercontent.com/Barabama/FreeNodes/main/nodes/yudou66.txt",
-        "https://raw.githubusercontent.com/Barabama/FreeNodes/main/nodes/nodefree.txt", "https://raw.githubusercontent.com/Surfboardv2ray/TGParse/main/main-parser.py",
-        "https://raw.githubusercontent.com/Syavar/V2ray-Configs/main/OK_viber.com.txt", "https://raw.githubusercontent.com/iboxz/free-v2ray-collector/main/main/vless",
-        "https://raw.githubusercontent.com/iboxz/free-v2ray-collector/main/main/vmess", "https://raw.githubusercontent.com/Barabama/FreeNodes/main/nodes/clashmeta.txt",
-        "https://raw.githubusercontent.com/Barabama/FreeNodes/main/nodes/nodev2ray.txt", "https://raw.githubusercontent.com/Syavar/V2ray-Configs/main/OK_TLS_vk.com.txt",
-        "https://raw.githubusercontent.com/Syavar/V2ray-Configs/main/OK_google.com.txt", "https://raw.githubusercontent.com/rango-cfs/NewCollector/main/v2ray_links.txt",
-        "https://raw.githubusercontent.com/roosterkid/openproxylist/main/V2RAY_RAW.txt", "https://raw.githubusercontent.com/Barabama/FreeNodes/main/nodes/v2rayshare.txt",
-        "https://raw.githubusercontent.com/arshiacomplus/v2rayExtractor/main/vless.html", "https://raw.githubusercontent.com/miladtahanian/V2RayCFGDumper/main/config.txt",
-        "https://raw.githubusercontent.com/Created-By/Telegram-Eag1e_YT/main/%40Eag1e_YT", "https://raw.githubusercontent.com/Kolandone/v2raycollector/main/config_lite.txt",
-        "https://raw.githubusercontent.com/Syavar/V2ray-Configs/main/OK_telegram.org.txt", "https://raw.githubusercontent.com/Syavar/V2ray-Configs/main/OK_whatsapp.com.txt",
-        "https://raw.githubusercontent.com/skywrt/v2ray-configs/main/Config%20list15.txt", "https://raw.githubusercontent.com/skywrt/v2ray-configs/main/Config%20list49.txt",
-        "https://raw.githubusercontent.com/MahsaNetConfigTopic/config/main/xray_final.txt", "https://raw.githubusercontent.com/SamanGho/v2ray_collector/main/v2tel_links1.txt",
-        "https://raw.githubusercontent.com/SoliSpirit/v2ray-configs/main/Countries/Tr.txt", "https://raw.githubusercontent.com/SoliSpirit/v2ray-configs/main/Countries/Us.txt",
-        "https://raw.githubusercontent.com/Surfboardv2ray/TGParse/main/python/splitter.py", "https://raw.githubusercontent.com/Syavar/V2ray-Configs/main/OK_TLS_viber.com.txt",
-        "https://raw.githubusercontent.com/arshiacomplus/v2rayExtractor/main/mix/sub.html", "https://raw.githubusercontent.com/ermaozi/get_subscribe/main/subscribe/v2ray.txt",
-        "https://raw.githubusercontent.com/Mahdi0024/ProxyCollector/master/sub/proxies.txt", "https://raw.githubusercontent.com/Surfboardv2ray/TGParse/main/backups/tg-parser_1",
-        "https://raw.githubusercontent.com/Syavar/V2ray-Configs/main/OK_TLS_google.com.txt", "https://raw.githubusercontent.com/Syavar/V2ray-Configs/main/OK_activision.com.txt",
-        "https://raw.githubusercontent.com/Syavar/V2ray-Configs/main/OK_css.rbxcdn.com.txt", "https://raw.githubusercontent.com/youfoundamin/V2rayCollector/main/mixed_iran.txt",
-        "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/All_Configs_Sub.txt", "https://raw.githubusercontent.com/iboxz/free-v2ray-collector/main/main/shadowsocks",
-        "https://raw.githubusercontent.com/Argh94/V2RayAutoConfig/main/configs/Hysteria2.txt", "https://raw.githubusercontent.com/Farid-Karimi/Config-Collector/main/mixed_iran.txt",
-        "https://raw.githubusercontent.com/MhdiTaheri/V2rayCollector_Py/main/sub/Mix/mix.txt", "https://raw.githubusercontent.com/Surfboardv2ray/TGParse/main/backups/main-parser_1",
-        "https://raw.githubusercontent.com/Syavar/V2ray-Configs/main/OK_TLS_telegram.org.txt", "https://raw.githubusercontent.com/Syavar/V2ray-Configs/main/OK_whatsapp.com.txt",
-        "https://raw.githubusercontent.com/Syavar/V2ray-Configs/main/OK_activision.com.txt", "https://raw.githubusercontent.com/Syavar/V2ray-Configs/main/OK_TLS_css.rbxcdn.com.txt",
-        "https://raw.githubusercontent.com/mahdibland/ShadowsocksAggregator/master/Eternity.txt", "https://raw.githubusercontent.com/Syavar/V2ray-Configs/main/OK_speedtest.tinkoff.ru.txt",
-        "https://raw.githubusercontent.com/Kwinshadow/TelegramV2rayCollector/main/sublinks/ss.txt", "https://raw.githubusercontent.com/Kwinshadow/TelegramV2rayCollector/main/sublinks/mix.txt",
-        "https://raw.githubusercontent.com/skywrt/v2ray-configs/main/Splitted-By-Protocol/vmess.txt", "https://raw.githubusercontent.com/Kwinshadow/TelegramV2rayCollector/main/sublinks/vless.txt",
-        "https://raw.githubusercontent.com/Kwinshadow/TelegramV2rayCollector/main/sublinks/vmess.txt", "https://raw.githubusercontent.com/SoliSpirit/v2ray-configs/main/Countries/Liechtenstein.txt",
-        "https://raw.githubusercontent.com/Syavar/V2ray-Configs/main/OK_TLS_speedtest.tinkoff.ru.txt", "https://raw.githubusercontent.com/Firmfox/Proxify/main/v2ray_configs/mixed/subscription-2.txt",
-        "https://raw.githubusercontent.com/SoliSpirit/v2ray-configs/main/Countries/North_Macedonia.txt", "https://raw.githubusercontent.com/10ium/ScrapeAndCategorize/main/output_configs/Turkmenistan.txt",
-        "https://raw.githubusercontent.com/MrAbolfazlNorouzi/iran-configs/main/configs/working-configs.txt", "https://raw.githubusercontent.com/ebrasha/free-v2ray-public-list/main/V2Ray-Config-By-EbraSha.txt",
-        "https://raw.githubusercontent.com/MatinGhanbari/v2ray-configs/main/subscriptions/v2ray/subs/sub1.txt", "https://raw.githubusercontent.com/mohamadfg-dev/telegram-v2ray-configs-collector/main/category/xhttp.txt",
-        "https://raw.githubusercontent.com/mohamadfg-dev/telegram-v2ray-configs-collector/main/category/httpupgrade.txt", "https://raw.githubusercontent.com/MrMohebi/xray-proxy-grabber-telegram/master/collected-proxies/row-url/all.txt",
-        "https://raw.githubusercontent.com/MrMohebi/xray-proxy-grabber-telegram/master/collected-proxies/row-url/actives.txt"
-    ]
-}
+text2art = None
+AGGREGATOR_AVAILABLE = False
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+CONFIG_FILE = ""
+SOURCES_FILE = ""
+console = Console()
+DEFAULT_SOURCES_DATA = {}
+PROTO_HINTS = ("vless://", "vmess://", "trojan://", "hysteria2://", "hy2://", "ss://")
+BASE64_CHARS = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=_-")
+URL_FINDER = re.compile(
+    r'(?:vless|vmess|trojan|hysteria2|hy2)://[^\s"\'<>]+|(?<![A-Za-z0-9+])ss://[^\s"\'<>]+',
+    re.IGNORECASE)
 
 DEFAULT_CONFIG = {
-    "core_path": "xray",  # путь до ядра, просто xray если лежит в обнимку с скриптом
-    "threads": 20,        # Потоки
-    "timeout": 3,         # Таймаут (повышать в случае огромного пинга)
+    "core_path": "/home/felix/Documents/Scripts/xray",  # путь до ядра, просто xray если лежит в обнимку с скриптом
+    "threads": 500,        # Потоки
+    "timeout": 4,         # Таймаут (повышать в случае огромного пинга)
     "local_port_start": 1080, # Отвечает за то, с какого конкретно порта будут запускаться ядра, 1080 > 1081 > 1082 = три потока(три ядра)
     "test_domain": "https://www.google.com/generate_204", # Ссылка по которой будут чекаться прокси, можно использовать другие в случае блокировок в разных странах.(http://cp.cloudflare.com/generate_204)
-    "output_file": "sortedProxy.txt", # имя файла с отфильтрованными проксями
+    "output_file": "/home/felix/Documents/Scripts/yo.txt", # имя файла с отфильтрованными проксями
     "core_startup_timeout": 2.5, # Максимальное время ожидания старта ядра(ну если тупит)
     "core_kill_delay": 0.05,     # Задержка после УБИЙСТВА
     "shuffle": False,
@@ -172,7 +46,7 @@ DEFAULT_CONFIG = {
     "speed_connect_timeout": 5,   # Макс. время (сек) на подключение перед скачиванием (пинг 4000мс, скрипт ждёт 5000мс, значит скорость будет замеряна.)
     "speed_max_mb": 10,           # Лимит скачивания в МБ (чтобы не тратить трафик)
     "speed_min_kb": 1,            # Минимальный порог данных (в Килобайтах). Если прокси скачал меньше этого, скорость будет равной 0.0
-
+    "sources": {}, # Переезд в отделный .json
     "speed_targets": [
         "https://speed.cloudflare.com/__down?bytes=20000000",              # Cloudflare (Global)
         "https://proof.ovh.net/files/100Mb.dat",                           # OVH (Europe/Global)
@@ -181,11 +55,7 @@ DEFAULT_CONFIG = {
         "https://mirror.leaseweb.com/speedtest/100mb.bin",                 # Leaseweb (NL)
         "http://speedtest-ny.turnkeyinternet.net/100mb.bin",               # USA
         "https://yandex.ru/internet/api/v0/measure/download?size=10000000" # Yandex (RU/CIS)
-    ],
-
-
-    "sources": {}, # Переезд в отделный .json
-}
+    ],}
 
 def load_sources():
     if os.path.exists(SOURCES_FILE):
@@ -258,30 +128,6 @@ def load_config():
         return cfg
 
 GLOBAL_CFG = load_config()
-
-PROTO_HINTS = ("vless://", "vmess://", "trojan://", "hysteria2://", "hy2://", "ss://")
-
-BASE64_CHARS = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=_-")
-
-URL_FINDER = re.compile(
-    r'(?:vless|vmess|trojan|hysteria2|hy2)://[^\s"\'<>]+|(?<![A-Za-z0-9+])ss://[^\s"\'<>]+',
-    re.IGNORECASE
-)
-
-try:
-    from rich.console import Console
-    from rich.panel import Panel
-    from rich.table import Table
-    from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn, TimeRemainingColumn
-    from rich.prompt import Prompt, Confirm
-    from rich.logging import RichHandler
-    from rich import box
-    from rich.text import Text
-    console = Console()
-except ImportError:
-    print("Пожалуйста, установите библиотеку rich: pip install rich")
-    sys.exit(1)
-
 class Fore:
     CYAN = "[cyan]"
     GREEN = "[green]"
@@ -309,14 +155,14 @@ ANSI_ESCAPE = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
 
     
 class SmartLogger:
-    def __init__(self, filename="checker_history.log"):
+    def __init__(self, filename=""):
         self.filename = filename
         self.lock = Lock()
         try:
             with open(self.filename, 'a', encoding='utf-8') as f:
-                f.write(f"\n{'-'*30} NEW SESSION {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {'-'*30}\n")
+                pass
         except Exception as e:
-            console.print(f"[bold red]Ошибка создания лога: {e}[/]")
+            pass
 
     def log(self, msg, style=None):
         with self.lock:
@@ -331,11 +177,11 @@ class SmartLogger:
                     log_line = f"{timestamp} {clean_msg}\n"
                     
                     with open(self.filename, 'a', encoding='utf-8') as f:
-                        f.write(log_line)
+                        pass
             except Exception:
                 pass
 
-MAIN_LOGGER = SmartLogger("checker_history.log")
+MAIN_LOGGER = SmartLogger("")
 
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO, datefmt='%H:%M:%S')
 
@@ -352,22 +198,7 @@ LOGO_FONTS = [
     "4Max"
 ]
 
-BACKUP_LOGO = r"""
-+═════════════════════════════════════════════════════════════════════════+
-║      ███▄ ▄███▓ ██ ▄█▀ █    ██  ██▓    ▄▄▄█████▓ ██▀███   ▄▄▄           ║
-║     ▓██▒▀█▀ ██▒ ██▄█▒  ██  ▓██▒▓██▒    ▓  ██▒ ▓▒▓██ ▒ ██▒▒████▄         ║
-║     ▓██    ▓██░▓███▄░ ▓██  ▒██░▒██░    ▒ ▓██░ ▒░▓██ ░▄█ ▒▒██  ▀█▄       ║
-║     ▒██    ▒██ ▓██ █▄ ▓▓█  ░██░▒██░    ░ ▓██▓ ░ ▒██▀▀█▄  ░██▄▄▄▄██      ║
-║     ▒██▒   ░██▒▒██▒ █▄▒▒█████▓ ░██████▒  ▒██▒ ░ ░██▓ ▒██▒ ▓█   ▓██▒     ║
-║     ░ ▒░   ░  ░▒ ▒▒ ▓▒░▒▓▒ ▒ ▒ ░ ▒░▓  ░  ▒ ░░   ░ ▒▓ ░▒▓░ ▒▒   ▓▒█░     ║
-║     ░  ░      ░░ ░▒ ▒░░░▒░ ░ ░ ░ ░ ▒  ░    ░      ░▒ ░ ▒░  ▒   ▒▒ ░     ║
-║     ░      ░   ░ ░░ ░  ░░░ ░ ░   ░ ░     ░        ░░   ░   ░   ▒        ║
-║            ░   ░  ░      ░         ░  ░            ░           ░  ░     ║
-║                                                                         ║
-+═════════════════════════════════════════════════════════════════════════+
-║                               MKultra69                                 ║
-+═════════════════════════════════════════════════════════════════════════+
-"""
+BACKUP_LOGO = r""""""
 
 # ------------------------------ ДАЛЬШЕ БОГА НЕТ ------------------------------
 
@@ -1339,13 +1170,13 @@ def interactive_menu():
         console.print(table)
         
         valid_choices = ["0", "1", "2", "3", "4", "5"] if AGGREGATOR_AVAILABLE else ["0", "1", "2", "3", "5"]
-        ch = Prompt.ask("[bold yellow]>[/] Выберите действие", choices=valid_choices)
+        ch = 1
         
         if ch == '0':
             sys.exit()
 
         defaults = {
-            "file": None, "url": None, "reuse": False,
+            "file": "/home/felix/Documents/Scripts/all.txt", "url": None, "reuse": False,
             "domain": GLOBAL_CFG['test_domain'],
             "timeout": GLOBAL_CFG['timeout'], 
             "lport": GLOBAL_CFG['local_port_start'], 
@@ -1364,7 +1195,7 @@ def interactive_menu():
         }
         
         if ch == '1':
-            defaults["file"] = Prompt.ask("[cyan][?][/] Путь к файлу").strip('"')
+            defaults["file"] = "/home/felix/Documents/Scripts/all.txt"
             if not defaults["file"]: continue
             
         elif ch == '2':
@@ -1395,13 +1226,6 @@ def interactive_menu():
             kill_all_cores_manual()
             continue
 
-        if Confirm.ask("Включить тест скорости?", default=False):
-            defaults["speed_check"] = True
-            defaults["sort_by"] = "speed"
-        else:
-            defaults["speed_check"] = False
-            defaults["sort_by"] = "ping"
-
         args = SimpleNamespace(**defaults)
         
         safe_print("\n[yellow]>>> Инициализация проверки...[/]")
@@ -1417,29 +1241,6 @@ def interactive_menu():
         Prompt.ask("\n[bold]Нажмите Enter чтобы вернуться в меню...[/]", password=False)
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-m", "--menu", action="store_true")
-    parser.add_argument("-f", "--file")
-    parser.add_argument("-u", "--url")
-    parser.add_argument("--reuse", action="store_true")
-    
-    parser.add_argument("-t", "--timeout", type=int, default=GLOBAL_CFG['timeout'])
-    parser.add_argument("-l", "--lport", type=int, default=GLOBAL_CFG['local_port_start'])
-    parser.add_argument("-T", "--threads", type=int, default=GLOBAL_CFG['threads'])
-    parser.add_argument("-c", "--core", default=GLOBAL_CFG['core_path'])
-    parser.add_argument("--t2exec", type=float, default=GLOBAL_CFG['core_startup_timeout'])
-    parser.add_argument("--t2kill", type=float, default=GLOBAL_CFG['core_kill_delay'])
-    parser.add_argument("-o", "--output", default=GLOBAL_CFG['output_file'])
-    parser.add_argument("-d", "--domain", default=GLOBAL_CFG['test_domain'])
-    parser.add_argument("-s", "--shuffle", action='store_true', default=GLOBAL_CFG['shuffle'])
-    parser.add_argument("-n", "--number", type=int)
-    parser.add_argument("--agg", action="store_true", help="Запустить агрегатор")
-    parser.add_argument("--agg-cats", nargs='+', help="Категории для агрегатора (например: 1 2)")
-    parser.add_argument("--agg-filter", nargs='+', help="Ключевые слова для фильтра (например: vless reality)")
-    parser.add_argument("--speed", action="store_true", dest="speed_check", help="Включить тест скорости")
-    parser.add_argument("--sort", choices=["ping", "speed"], default=GLOBAL_CFG['sort_by'], dest="sort_by", help="Метод сортировки")
-    parser.add_argument("--speed-url", default=GLOBAL_CFG['speed_test_url'], dest="speed_test_url")
-
     if len(sys.argv) == 1:
         interactive_menu()
     else:
@@ -1456,25 +1257,3 @@ if __name__ == '__main__':
     finally:
         try: shutil.rmtree(TEMP_DIR)
         except: pass
-
-
-# +═════════════════════════════════════════════════════════════════════════+
-# ║      ███▄ ▄███▓ ██ ▄█▀ █    ██  ██▓    ▄▄▄█████▓ ██▀███   ▄▄▄           ║
-# ║     ▓██▒▀█▀ ██▒ ██▄█▒  ██  ▓██▒▓██▒    ▓  ██▒ ▓▒▓██ ▒ ██▒▒████▄         ║
-# ║     ▓██    ▓██░▓███▄░ ▓██  ▒██░▒██░    ▒ ▓██░ ▒░▓██ ░▄█ ▒▒██  ▀█▄       ║
-# ║     ▒██    ▒██ ▓██ █▄ ▓▓█  ░██░▒██░    ░ ▓██▓ ░ ▒██▀▀█▄  ░██▄▄▄▄██      ║
-# ║     ▒██▒   ░██▒▒██▒ █▄▒▒█████▓ ░██████▒  ▒██▒ ░ ░██▓ ▒██▒ ▓█   ▓██▒     ║
-# ║     ░ ▒░   ░  ░▒ ▒▒ ▓▒░▒▓▒ ▒ ▒ ░ ▒░▓  ░  ▒ ░░   ░ ▒▓ ░▒▓░ ▒▒   ▓▒█░     ║
-# ║     ░  ░      ░░ ░▒ ▒░░░▒░ ░ ░ ░ ░ ▒  ░    ░      ░▒ ░ ▒░  ▒   ▒▒ ░     ║
-# ║     ░      ░   ░ ░░ ░  ░░░ ░ ░   ░ ░     ░        ░░   ░   ░   ▒        ║
-# ║            ░   ░  ░      ░         ░  ░            ░           ░  ░     ║
-# ║                                                                         ║
-# +═════════════════════════════════════════════════════════════════════════+
-# ║                               by MKultra69                              ║
-# +═════════════════════════════════════════════════════════════════════════+
-# +═════════════════════════════════════════════════════════════════════════+
-# ║                      https://github.com/MKultra6969                     ║
-# +═════════════════════════════════════════════════════════════════════════+
-# +═════════════════════════════════════════════════════════════════════════+
-# ║                                  mk69.su                                ║
-# +═════════════════════════════════════════════════════════════════════════+
