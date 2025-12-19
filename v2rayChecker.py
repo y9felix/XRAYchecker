@@ -29,8 +29,8 @@ URL_FINDER = re.compile(
 
 DEFAULT_CONFIG = {
     "core_path": "/home/felix/Documents/Scripts/xray",  # путь до ядра, просто xray если лежит в обнимку с скриптом
-    "threads": 500,        # Потоки
-    "timeout": 4,         # Таймаут (повышать в случае огромного пинга)
+    "threads": 100,        # Потоки
+    "timeout": 2.3,         # Таймаут (повышать в случае огромного пинга)
     "local_port_start": 1080, # Отвечает за то, с какого конкретно порта будут запускаться ядра, 1080 > 1081 > 1082 = три потока(три ядра)
     "test_domain": "https://www.google.com/generate_204", # Ссылка по которой будут чекаться прокси, можно использовать другие в случае блокировок в разных странах.(http://cp.cloudflare.com/generate_204)
     "output_file": "/home/felix/Documents/Scripts/yo.txt", # имя файла с отфильтрованными проксями
@@ -210,7 +210,6 @@ def is_port_in_use(port):
     except:
         return False
 
-
 def wait_for_core_start(port, max_wait):
     start_time = time.time()
     while time.time() - start_time < max_wait:
@@ -218,7 +217,6 @@ def wait_for_core_start(port, max_wait):
             return True
         time.sleep(0.05) 
     return False
-
 
 def split_list(lst, n):
     if n <= 0: return []
